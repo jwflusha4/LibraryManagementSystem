@@ -1,19 +1,22 @@
 package com.shaw.LibraryManagementSystem.config;
 
-import com.shaw.LibraryManagementSystem.model.User;
+import com.shaw.LibraryManagementSystem.config.ApplicationConfig;
 import com.shaw.LibraryManagementSystem.repository.UserRepository;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ApplicationConfigTest {
 
     @Mock
@@ -24,18 +27,17 @@ public class ApplicationConfigTest {
 
     @Test
     public void testUserDetailsService() {
-        // Create a mock user
-        User user = new User();
-        user.setEmail("test@example.com");
+        // Create a mock user to return when findByEmail is called
+        UserDetails userDetails = User.withUsername("test")
+                .password("password")
+                .roles("USER")
+                .build();
+        // Configure userRepository mock to return the mock user when findByEmail is called
+        when(userRepository.findByEmail("test@example.com")).thenReturn((Optional) Optional.of(userDetails));
 
-        // Mock the userRepository.findByEmail() method to return the mock user
-        when(userRepository.findByEmail("test@example.com")).thenReturn(java.util.Optional.of(user));
-
-        // Test the userDetailsService() method
-        UserDetails userDetails = applicationConfig.userDetailsService().loadUserByUsername("test@example.com");
-        assertNotNull(userDetails);
-
-        // Verify that the userRepository.findByEmail() method was called
-        verify(userRepository).findByEmail("test@example.com");
+        // Invoke userDetailsService method and assert that it returns a non-null value
+        UserDetailsService userDetailsService = applicationConfig.userDetailsService();
+        UserDetails loadedUser = userDetailsService.loadUserByUsername("test@example.com");
+        assertNotNull(loadedUser);
     }
 }

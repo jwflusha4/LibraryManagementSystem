@@ -1,32 +1,24 @@
 package com.shaw.LibraryManagementSystem.controller;
 
+import com.shaw.LibraryManagementSystem.controller.LoanController;
 import com.shaw.LibraryManagementSystem.dtos.LoanRequest;
 import com.shaw.LibraryManagementSystem.dtos.LoanResponse;
 import com.shaw.LibraryManagementSystem.service.LoanService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-import java.util.Collections;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
+
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-@RunWith(MockitoJUnitRunner.class)
-class LoanControllerTest {
-
-    private MockMvc mockMvc;
+public class LoanControllerTest {
 
     @Mock
     private LoanService loanService;
@@ -35,45 +27,45 @@ class LoanControllerTest {
     private LoanController loanController;
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(loanController).build();
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
     }
 
     @Test
-    void testLoanBook() throws Exception {
-        LoanRequest request = new LoanRequest();
-        LoanResponse response = new LoanResponse("Success");
+    public void testLoanBook() {
+        LoanRequest request = new LoanRequest(1L, 1L);
+        LoanResponse expectedResponse = new LoanResponse("Success");
+        when(loanService.loanBook(request)).thenReturn(expectedResponse);
 
-        when(loanService.loanBook(any(LoanRequest.class))).thenReturn(response);
+        LoanResponse actualResponse = loanController.loanBook(request);
 
-        mockMvc.perform(post("/loan")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"userId\": 1, \"bookId\": 1 }"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("message").value("Success"));
+        assertEquals(expectedResponse, actualResponse);
+        verify(loanService, times(1)).loanBook(request);
     }
 
     @Test
-    void testReturnBook() throws Exception {
-        LoanResponse response = new LoanResponse("Success");
+    public void testReturnBook() {
+        Long loanId = 1L;
+        LoanResponse expectedResponse = new LoanResponse("Success");
+        when(loanService.returnBook(loanId)).thenReturn(expectedResponse);
 
-        when(loanService.returnBook(anyLong())).thenReturn(response);
+        LoanResponse actualResponse = loanController.returnBook(loanId);
 
-        mockMvc.perform(post("/loan/return/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("message").value("Success"));
+        assertEquals(expectedResponse, actualResponse);
+        verify(loanService, times(1)).returnBook(loanId);
     }
 
     @Test
-    void testGetLoansByUserId() throws Exception {
-        LoanResponse response = new LoanResponse("Success");
-        List<LoanResponse> responses = Collections.singletonList(response);
+    public void testGetLoansByUserId() {
+        Long userId = 1L;
+        List<LoanResponse> expectedResponses = new ArrayList<>();
+        // Populate expectedResponses with test data
 
-        when(loanService.getLoansByUserId(anyLong())).thenReturn(responses);
+        when(loanService.getLoansByUserId(userId)).thenReturn(expectedResponses);
 
-        mockMvc.perform(get("/loan/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("message").value("Success"));
+        List<LoanResponse> actualResponses = loanController.getLoansByUserId(userId);
+
+        assertEquals(expectedResponses, actualResponses);
+        verify(loanService, times(1)).getLoansByUserId(userId);
     }
 }

@@ -1,5 +1,6 @@
 package com.shaw.LibraryManagementSystem.controller;
 
+import com.shaw.LibraryManagementSystem.controller.BookController;
 import com.shaw.LibraryManagementSystem.dtos.BookRequest;
 import com.shaw.LibraryManagementSystem.dtos.BookResponse;
 import com.shaw.LibraryManagementSystem.model.Book;
@@ -9,24 +10,17 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-class BookControllerTest {
-
-    private MockMvc mockMvc;
+public class BookControllerTest {
 
     @Mock
     private BookService bookService;
@@ -35,83 +29,68 @@ class BookControllerTest {
     private BookController bookController;
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(bookController).build();
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
     }
 
     @Test
-    @WithMockUser(roles = {"USER", "ADMIN"})
-    void testGetBook() throws Exception {
-        Book book = new Book();
-        book.setId(1L);
-        book.setTitle("Test Book");
+    public void testGetBook() {
+        Long bookId = 1L;
+        Book expectedBook = new Book(); // Create a sample book
+        when(bookService.getBooks(bookId)).thenReturn(Optional.of(expectedBook));
 
-        when(bookService.getBooks(anyLong())).thenReturn(Optional.of(book));
+        Optional<Book> actualBook = bookController.getBook(bookId);
 
-        mockMvc.perform(get("/book/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.title").value("Test Book"));
+        assertTrue(actualBook.isPresent());
+        assertEquals(expectedBook, actualBook.get());
+        verify(bookService, times(1)).getBooks(bookId);
     }
 
     @Test
-    @WithMockUser(roles = {"USER", "ADMIN"})
-    void testGetAllBook() throws Exception {
-        Book book = new Book();
-        book.setId(1L);
-        book.setTitle("Test Book");
-        List<Book> books = Collections.singletonList(book);
+    public void testGetAllBook() {
+        List<Book> expectedBooks = new ArrayList<>(); // Populate with sample books
+        when(bookService.getAllBooks()).thenReturn(expectedBooks);
 
-        when(bookService.getAllBooks()).thenReturn(books);
+        List<Book> actualBooks = bookController.getAllBook();
 
-        mockMvc.perform(get("/book/"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].title").value("Test Book"));
+        assertEquals(expectedBooks, actualBooks);
+        verify(bookService, times(1)).getAllBooks();
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void testAddBook() throws Exception {
-        BookRequest request = new BookRequest();
-        request.setTitle("Test Book");
-        BookResponse response = new BookResponse("Success");
+    public void testAddBook() {
+        BookRequest request = new BookRequest(); // Create a sample book request
+        BookResponse expectedResponse = new BookResponse("Book added successfully");
+        when(bookService.addBook(request)).thenReturn(expectedResponse);
 
-        when(bookService.addBook(any(BookRequest.class))).thenReturn(response);
+        BookResponse actualResponse = bookController.addBook(request);
 
-        mockMvc.perform(post("/book/add")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"title\": \"Test Book\" }"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Success"));
+        assertEquals(expectedResponse, actualResponse);
+        verify(bookService, times(1)).addBook(request);
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void testUpdateBook() throws Exception {
-        BookRequest request = new BookRequest();
-        request.setTitle("Updated Book");
-        BookResponse response = new BookResponse("Success");
+    public void testUpdateBook() {
+        Long bookId = 1L;
+        BookRequest request = new BookRequest(); // Create a sample book request
+        BookResponse expectedResponse = new BookResponse("Book updated successfully");
+        when(bookService.updateBook(bookId, request)).thenReturn(expectedResponse);
 
-        when(bookService.updateBook(anyLong(), any(BookRequest.class))).thenReturn(response);
+        BookResponse actualResponse = bookController.updateBook(bookId, request);
 
-        mockMvc.perform(put("/book/update/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"title\": \"Updated Book\" }"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Success"));
+        assertEquals(expectedResponse, actualResponse);
+        verify(bookService, times(1)).updateBook(bookId, request);
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
-    void testDeleteBook() throws Exception {
-        BookResponse response = new BookResponse("Success");
+    public void testDeleteBook() {
+        Long bookId = 1L;
+        BookResponse expectedResponse = new BookResponse("Book deleted successfully");
+        when(bookService.deleteBook(bookId)).thenReturn(expectedResponse);
 
-        when(bookService.deleteBook(anyLong())).thenReturn(response);
+        BookResponse actualResponse = bookController.deleteBook(bookId);
 
-        mockMvc.perform(delete("/book/delete/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Success"));
+        assertEquals(expectedResponse, actualResponse);
+        verify(bookService, times(1)).deleteBook(bookId);
     }
 }

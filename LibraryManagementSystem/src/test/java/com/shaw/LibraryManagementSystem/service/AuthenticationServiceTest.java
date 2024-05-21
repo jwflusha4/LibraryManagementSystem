@@ -3,21 +3,25 @@ package com.shaw.LibraryManagementSystem.service;
 import com.shaw.LibraryManagementSystem.dtos.AuthenticationRequest;
 import com.shaw.LibraryManagementSystem.dtos.AuthenticationResponse;
 import com.shaw.LibraryManagementSystem.dtos.RegisterRequest;
+import com.shaw.LibraryManagementSystem.model.Role;
 import com.shaw.LibraryManagementSystem.model.User;
 import com.shaw.LibraryManagementSystem.repository.UserRepository;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import com.shaw.LibraryManagementSystem.service.AuthenticationService;
+import com.shaw.LibraryManagementSystem.service.JwtService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import java.util.Optional;
 
-@RunWith(MockitoJUnitRunner.class)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 public class AuthenticationServiceTest {
 
     @Mock
@@ -38,41 +42,48 @@ public class AuthenticationServiceTest {
     @Test
     public void testRegister() {
         RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setFirstName("Test");
-        registerRequest.setLastName("User");
-        registerRequest.setEmail("test@example.com");
+        registerRequest.setFirstName("John");
+        registerRequest.setLastName("Doe");
+        registerRequest.setEmail("john@example.com");
         registerRequest.setPassword("password");
 
-        User savedUser = User.builder()
-                .firstName("Test")
-                .lastName("User")
-                .email("test@example.com")
-                .password("password")
+        User user = User.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .email("john@example.com")
+                .password("encodedPassword")
+                .role(Role.USER)
                 .build();
-        when(repository.save(any(User.class))).thenReturn(savedUser);
+
+        when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
+        when(repository.save(any(User.class))).thenReturn(user);
+        when(jwtService.generateToken(user)).thenReturn("generatedToken");
 
         AuthenticationResponse response = authenticationService.register(registerRequest);
 
-        assertEquals("testToken", response.getToken());
+        assertEquals("generatedToken", response.getToken());
+        verify(jwtService, times(1)).generateToken(any(User.class));
     }
 
     @Test
     public void testAuthenticate() {
         AuthenticationRequest authenticationRequest = new AuthenticationRequest();
-        authenticationRequest.setEmail("test@example.com");
+        authenticationRequest.setEmail("john@example.com");
         authenticationRequest.setPassword("password");
 
         User user = User.builder()
-                .firstName("Test")
-                .lastName("User")
-                .email("test@example.com")
-                .password("password")
+                .firstName("John")
+                .lastName("Doe")
+                .email("john@example.com")
+                .password("encodedPassword")
+                .role(Role.USER)
                 .build();
-        when(repository.findByEmail("test@example.com")).thenReturn(java.util.Optional.of(user));
-        when(jwtService.generateToken(user)).thenReturn("testToken");
+
+        when(repository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
+        when(jwtService.generateToken(user)).thenReturn("generatedToken");
 
         AuthenticationResponse response = authenticationService.authenticate(authenticationRequest);
 
-        assertEquals("testToken", response.getToken());
+        assertEquals("generatedToken", response.getToken());
     }
 }
